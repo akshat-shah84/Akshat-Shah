@@ -1,0 +1,874 @@
+{% comment %}
+  =============================================================================
+  Ecomexperts Hiring Test - Custom Banner Section (Simplified)
+  File: sections/ecomexperts-banner.liquid
+
+  Key Architectural Points:
+  1. Built from scratch without copying or modifying Dawn core components.
+  2. Pure semantic HTML5, scoped CSS, and zero jQuery or external libraries.
+  3. Responsive layout matching Figma:
+     - Desktop: 
+       * Top bar with brand logo, center message, yellow "CHOOSE GIFT →" button.
+       * Hero with left content ("The Gift Guide", description, "SHOP NOW →" with arrow animation)
+         and right hero media.
+       * Bottom announcement strip ("SUSTAINABLE, ETHICALLY MADE CLOTHES IN SIZES XXS TO 6XL").
+     - Mobile:
+       * Header with left hamburger menu toggle and centered brand logo.
+       * Hero with centered heading, centered description, stacked media,
+         and "SHOP NOW →" button positioned over the artwork.
+       * Bottom announcement strip with mobile text override.
+  4. All text, links, colors, and images are customizable in the Theme Editor.
+  5. Uses standard Shopify image_picker settings and lightweight placeholder_svg_tag fallbacks.
+  =============================================================================
+{% endcomment %}
+
+{%- liquid
+  assign header_title = section.settings.header_title | default: 'TISSO VISON'
+  assign header_message = section.settings.header_message | default: 'Find the ideal gift for your loved ones.'
+  assign header_btn_label = section.settings.header_button_label | default: 'CHOOSE GIFT'
+  assign header_btn_link = section.settings.header_button_link | default: '#'
+
+  assign heading = section.settings.heading | default: 'The Gift Guide'
+  assign desc_desktop = section.settings.description_desktop | default: 'Discover Joy: Your Ultimate Holiday Gift Destination. Explore our curated selection and find the perfect gifts to delight your loved ones this holiday season.'
+  assign desc_mobile = section.settings.description_mobile | default: 'Discover Joy: Your Ultimate Holiday Gift Destination.'
+  assign button_label = section.settings.button_label | default: 'SHOP NOW'
+  assign button_link = section.settings.button_link | default: '#'
+
+  assign ann_text_desktop = section.settings.announcement_text_desktop | default: 'SUSTAINABLE, ETHICALLY MADE CLOTHES IN SIZES XXS TO 6XL'
+  assign ann_text_mobile = section.settings.announcement_text_mobile | default: 'SUSTAINABLE, ETHICALLY MADE ACTIVEWEAR'
+
+  assign desktop_image = section.settings.image_desktop | default: section.settings.desktop_image
+  assign mobile_image = section.settings.image_mobile | default: section.settings.mobile_image | default: desktop_image
+-%}
+
+<div id="ecom-banner-{{ section.id }}" class="ecom-banner" data-section-id="{{ section.id }}">
+  <style>
+    /* ==========================================================================
+       Scoped Styles for Ecomexperts Banner Section
+       ========================================================================== */
+    #ecom-banner-{{ section.id }} {
+      --eb-bg-color: {{ section.settings.bg_color | default: '#ffffff' }};
+      --eb-text-color: {{ section.settings.text_color | default: '#000000' }};
+      --eb-header-bg: {{ section.settings.header_bg | default: '#ffffff' }};
+      --eb-header-border: {{ section.settings.header_border | default: '#f0f0f0' }};
+      --eb-yellow-btn-bg: {{ section.settings.header_button_bg | default: '#FFF000' }};
+      --eb-yellow-btn-text: {{ section.settings.header_button_text_color | default: '#000000' }};
+      --eb-shop-btn-bg: {{ section.settings.button_bg | default: '#000000' }};
+      --eb-shop-btn-text: {{ section.settings.button_text_color | default: '#ffffff' }};
+      --eb-ann-bg: {{ section.settings.announcement_bg | default: '#f4f4f4' }};
+      --eb-ann-text: {{ section.settings.announcement_text_color | default: '#000000' }};
+      
+      background-color: var(--eb-bg-color);
+      color: var(--eb-text-color);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      width: 100%;
+      overflow: hidden;
+      position: relative;
+    }
+
+    #ecom-banner-{{ section.id }} * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* --------------------------------------------------------------------------
+       1. Top Header Bar
+       -------------------------------------------------------------------------- */
+    #ecom-banner-{{ section.id }} .ecom-banner__header {
+      background-color: var(--eb-header-bg);
+      border-bottom: 1px solid var(--eb-header-border);
+      padding: 0 24px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+      z-index: 10;
+    }
+
+    #ecom-banner-{{ section.id }} .ecom-banner__logo {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--eb-text-color);
+      text-decoration: none;
+      display: inline-block;
+      white-space: nowrap;
+    }
+
+    #ecom-banner-{{ section.id }} .ecom-banner__header-message {
+      font-size: 14px;
+      color: #333333;
+      text-align: center;
+      flex: 1;
+      padding: 0 20px;
+    }
+
+    #ecom-banner-{{ section.id }} .ecom-banner__header-action {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+    }
+
+    #ecom-banner-{{ section.id }} .ecom-banner__choose-gift-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background-color: var(--eb-yellow-btn-bg);
+      color: var(--eb-yellow-btn-text);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      text-decoration: none;
+      padding: 10px 22px;
+      border: none;
+      cursor: pointer;
+      transition: background-color 0.25s ease, transform 0.2s ease, filter 0.2s ease;
+      white-space: nowrap;
+    }
+
+    #ecom-banner-{{ section.id }} .ecom-banner__choose-gift-btn:hover {
+      filter: brightness(0.96);
+      transform: translateY(-1px);
+    }
+
+    #ecom-banner-{{ section.id }} .ecom-banner__choose-gift-btn .btn-arrow-icon {
+      width: 16px;
+      height: 12px;
+      stroke: currentColor;
+      transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.4, 1);
+    }
+
+    #ecom-banner-{{ section.id }} .ecom-banner__choose-gift-btn:hover .btn-arrow-icon {
+      transform: translateX(4px);
+    }
+
+    /* Mobile Hamburger Trigger */
+    #ecom-banner-{{ section.id }} .ecom-banner__hamburger {
+      display: none;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 8px 4px;
+      flex-direction: column;
+      justify-content: space-between;
+      width: 28px;
+      height: 22px;
+      z-index: 15;
+    }
+
+    #ecom-banner-{{ section.id }} .ecom-banner__hamburger span {
+      display: block;
+      width: 100%;
+      height: 2px;
+      background-color: #000000;
+      border-radius: 1px;
+      transition: all 0.3s ease;
+    }
+
+    /* Mobile Drawer / Dropdown */
+    #ecom-banner-{{ section.id }} .ecom-banner__mobile-menu {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      width: 100%;
+      background: #ffffff;
+      border-bottom: 1px solid #e5e5e5;
+      padding: 20px 24px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+      flex-direction: column;
+      gap: 16px;
+      text-align: center;
+      z-index: 9;
+      opacity: 0;
+      transform: translateY(-10px);
+      transition: opacity 0.3s ease, transform 0.3s ease;
+      pointer-events: none;
+    }
+
+    #ecom-banner-{{ section.id }} .ecom-banner__mobile-menu.is-active {
+      display: flex;
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+
+    #ecom-banner-{{ section.id }} .ecom-banner__mobile-menu-text {
+      font-size: 14px;
+      color: #333333;
+    }
+
+    /* --------------------------------------------------------------------------
+       2. Hero Main Area
+       -------------------------------------------------------------------------- */
+    #ecom-banner-{{ section.id }} .ecom-banner__hero {
+      position: relative;
+      width: 100%;
+      max-width: 1600px;
+      margin: 0 auto;
+      min-height: 520px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    #ecom-banner-{{ section.id }} .ecom-banner__content {
+      flex: 0 0 46%;
+      max-width: 560px;
+      padding: 70px 40px 70px 72px;
+      z-index: 2;
+    }
+
+    #ecom-banner-{{ section.id }} .ecom-banner__title {
+      font-size: 56px;
+      font-weight: 700;
+      line-height: 1.12;
+      letter-spacing: -0.02em;
+      color: var(--eb-text-color);
+      margin-bottom: 24px;
+    }
+
+    #ecom-banner-{{ section.id }} .ecom-banner__desc {
+      font-size: 16px;
+      line-height: 1.6;
+      color: #2b2b2b;
+      margin-bottom: 36px;
+      max-width: 440px;
+    }
+
+    #ecom-banner-{{ section.id }} .desc-text-mobile {
+      display: none;
+    }
+
+    /* Desktop SHOP NOW Button */
+    #ecom-banner-{{ section.id }} .ecom-banner__cta-wrap-desktop {
+      display: block;
+    }
+
+    /* Required SHOP NOW Button Animation */
+    #ecom-banner-{{ section.id }} .ecom-banner__shop-btn {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+      background-color: var(--eb-shop-btn-bg);
+      color: var(--eb-shop-btn-text);
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      text-decoration: none;
+      padding: 16px 36px;
+      border: none;
+      cursor: pointer;
+      overflow: hidden;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+      transition: background-color 0.3s ease, box-shadow 0.3s ease, transform 0.25s ease;
+      z-index: 1;
+    }
+
+    /* Hover State & Arrow Animation */
+    #ecom-banner-{{ section.id }} .ecom-banner__shop-btn:hover {
+      background-color: #1a1a1a;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22);
+      transform: translateY(-1px);
+    }
+
+    #ecom-banner-{{ section.id }} .ecom-banner__shop-btn .btn-arrow-icon {
+      width: 22px;
+      height: 14px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+      transition: transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1);
+    }
+
+    #ecom-banner-{{ section.id }} .ecom-banner__shop-btn:hover .btn-arrow-icon {
+      transform: translateX(8px);
+    }
+
+    /* Active touch feedback */
+    #ecom-banner-{{ section.id }} .ecom-banner__shop-btn:active {
+      transform: translateY(1px);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    }
+
+    /* Hero Media Illustration Area */
+    #ecom-banner-{{ section.id }} .ecom-banner__media {
+      flex: 1;
+      height: 100%;
+      min-height: 520px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      position: relative;
+      overflow: hidden;
+    }
+
+    #ecom-banner-{{ section.id }} .ecom-banner__img {
+      width: 100%;
+      height: 100%;
+      max-height: 580px;
+      object-fit: contain;
+      object-position: right center;
+      display: block;
+    }
+
+    #ecom-banner-{{ section.id }} .ecom-banner__img--mobile {
+      display: none;
+    }
+
+    /* Clean Shopify Placeholder Styling */
+    #ecom-banner-{{ section.id }} .ecom-banner__placeholder {
+      width: 100%;
+      max-width: 720px;
+      height: 480px;
+      background-color: #f7f7f7;
+      fill: #a0a0a0;
+      display: block;
+    }
+
+    /* Mobile CTA container (hidden on desktop) */
+    #ecom-banner-{{ section.id }} .ecom-banner__cta-wrap-mobile {
+      display: none;
+    }
+
+    /* --------------------------------------------------------------------------
+       3. Bottom Announcement Strip
+       -------------------------------------------------------------------------- */
+    #ecom-banner-{{ section.id }} .ecom-banner__announcement {
+      background-color: var(--eb-ann-bg);
+      color: var(--eb-ann-text);
+      text-align: center;
+      padding: 12px 20px;
+      width: 100%;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      text-decoration: none;
+      display: block;
+      transition: background-color 0.25s ease;
+    }
+
+    #ecom-banner-{{ section.id }} a.ecom-banner__announcement:hover {
+      background-color: #eaeaea;
+    }
+
+    #ecom-banner-{{ section.id }} .ann-text-mobile {
+      display: none;
+    }
+
+    /* --------------------------------------------------------------------------
+       Responsive Mobile Breakpoint (< 768px)
+       -------------------------------------------------------------------------- */
+    @media screen and (max-width: 767px) {
+      #ecom-banner-{{ section.id }} .ecom-banner__header {
+        height: 56px;
+        padding: 0 16px;
+        justify-content: center;
+      }
+
+      /* Mobile Hamburger on Left */
+      #ecom-banner-{{ section.id }} .ecom-banner__hamburger {
+        display: flex;
+        position: absolute;
+        left: 16px;
+        top: 50%;
+        transform: translateY(-50%);
+      }
+
+      /* Centered Logo on Mobile */
+      #ecom-banner-{{ section.id }} .ecom-banner__logo {
+        font-size: 18px;
+        letter-spacing: 0.14em;
+        text-align: center;
+      }
+
+      /* Hide Desktop-only Header Items */
+      #ecom-banner-{{ section.id }} .ecom-banner__header-message,
+      #ecom-banner-{{ section.id }} .ecom-banner__header-action {
+        display: none;
+      }
+
+      /* Mobile Hero Stacking */
+      #ecom-banner-{{ section.id }} .ecom-banner__hero {
+        flex-direction: column;
+        min-height: auto;
+        padding: 0;
+      }
+
+      /* Centered Hero Text on Mobile */
+      #ecom-banner-{{ section.id }} .ecom-banner__content {
+        flex: 0 0 100%;
+        max-width: 100%;
+        padding: 36px 20px 20px 20px;
+        text-align: center;
+      }
+
+      #ecom-banner-{{ section.id }} .ecom-banner__title {
+        font-size: 34px;
+        margin-bottom: 14px;
+      }
+
+      #ecom-banner-{{ section.id }} .ecom-banner__desc {
+        font-size: 15px;
+        line-height: 1.5;
+        margin: 0 auto;
+        max-width: 320px;
+      }
+
+      #ecom-banner-{{ section.id }} .desc-text-desktop {
+        display: none;
+      }
+
+      #ecom-banner-{{ section.id }} .desc-text-mobile {
+        display: inline;
+      }
+
+      /* Hide Desktop CTA in Content */
+      #ecom-banner-{{ section.id }} .ecom-banner__cta-wrap-desktop {
+        display: none;
+      }
+
+      /* Mobile Media Container with Floating SHOP NOW Button */
+      #ecom-banner-{{ section.id }} .ecom-banner__media {
+        width: 100%;
+        min-height: auto;
+        position: relative;
+        justify-content: center;
+        padding: 10px 0 0 0;
+      }
+
+      #ecom-banner-{{ section.id }} .ecom-banner__img--desktop {
+        display: none;
+      }
+
+      #ecom-banner-{{ section.id }} .ecom-banner__img--mobile {
+        display: block;
+        width: 100%;
+        max-width: 440px;
+        height: auto;
+        object-fit: contain;
+        margin: 0 auto;
+      }
+
+      #ecom-banner-{{ section.id }} .ecom-banner__placeholder {
+        height: 320px;
+        max-width: 400px;
+        margin: 0 auto;
+      }
+
+      /* Mobile CTA Overlay Positioned Centered Over Illustration */
+      #ecom-banner-{{ section.id }} .ecom-banner__cta-wrap-mobile {
+        display: flex;
+        justify-content: center;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 100%;
+        z-index: 5;
+      }
+
+      #ecom-banner-{{ section.id }} .ecom-banner__cta-wrap-mobile .ecom-banner__shop-btn {
+        padding: 14px 30px;
+        font-size: 13px;
+        background-color: #000000;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+      }
+
+      /* Announcement Strip Mobile Switch */
+      #ecom-banner-{{ section.id }} .ecom-banner__announcement {
+        padding: 12px 14px;
+        font-size: 12px;
+        letter-spacing: 0.08em;
+      }
+
+      #ecom-banner-{{ section.id }} .ann-text-desktop {
+        display: none;
+      }
+
+      #ecom-banner-{{ section.id }} .ann-text-mobile {
+        display: inline;
+      }
+    }
+  </style>
+
+  {% comment %} ==================== TOP HEADER BAR ==================== {% endcomment %}
+  {%- if section.settings.show_header -%}
+    <header class="ecom-banner__header">
+      <!-- Mobile Hamburger Button -->
+      <button 
+        type="button" 
+        class="ecom-banner__hamburger" 
+        aria-label="Toggle navigation menu" 
+        aria-expanded="false" 
+        id="ecom-hamburger-{{ section.id }}"
+      >
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+
+      <!-- Brand Logo / Title -->
+      <a href="{{ section.settings.header_logo_link | default: routes.root_url }}" class="ecom-banner__logo">
+        {{ header_title }}
+      </a>
+
+      <!-- Desktop Center Message -->
+      {%- if header_message != blank -%}
+        <div class="ecom-banner__header-message">
+          {{ header_message }}
+        </div>
+      {%- endif -%}
+
+      <!-- Desktop Yellow Action Button -->
+      {%- if header_btn_label != blank -%}
+        <div class="ecom-banner__header-action">
+          <a href="{{ header_btn_link }}" class="ecom-banner__choose-gift-btn">
+            <span>{{ header_btn_label }}</span>
+            <svg class="btn-arrow-icon" viewBox="0 0 16 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M1 6H15M15 6L10 1M15 6L10 11" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </a>
+        </div>
+      {%- endif -%}
+
+      <!-- Mobile Menu Dropdown / Drawer -->
+      <div class="ecom-banner__mobile-menu" id="ecom-mobile-menu-{{ section.id }}">
+        {%- if header_message != blank -%}
+          <p class="ecom-banner__mobile-menu-text">{{ header_message }}</p>
+        {%- endif -%}
+        {%- if header_btn_label != blank -%}
+          <a href="{{ header_btn_link }}" class="ecom-banner__choose-gift-btn">
+            <span>{{ header_btn_label }}</span>
+            <svg class="btn-arrow-icon" viewBox="0 0 16 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M1 6H15M15 6L10 1M15 6L10 11" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </a>
+        {%- endif -%}
+      </div>
+    </header>
+  {%- endif -%}
+
+  {% comment %} ==================== HERO SECTION ==================== {% endcomment %}
+  <section class="ecom-banner__hero">
+    <!-- Left / Top Content -->
+    <div class="ecom-banner__content">
+      {%- if heading != blank -%}
+        <h1 class="ecom-banner__title">{{ heading }}</h1>
+      {%- endif -%}
+
+      {%- if desc_desktop != blank -%}
+        <p class="ecom-banner__desc">
+          <span class="desc-text-desktop">{{ desc_desktop }}</span>
+          <span class="desc-text-mobile">{{ desc_mobile }}</span>
+        </p>
+      {%- endif -%}
+
+      <!-- Desktop Button placement -->
+      {%- if button_label != blank -%}
+        <div class="ecom-banner__cta-wrap-desktop">
+          <a href="{{ button_link }}" class="ecom-banner__shop-btn">
+            <span>{{ button_label }}</span>
+            <svg class="btn-arrow-icon" viewBox="0 0 24 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M1 7H22M22 7L16 1M22 7L16 13" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </a>
+        </div>
+      {%- endif -%}
+    </div>
+
+    <!-- Media / Artwork Area -->
+    <div class="ecom-banner__media">
+      {%- if desktop_image != blank -%}
+        {{
+          desktop_image
+          | image_url: width: 1800
+          | image_tag:
+            loading: 'eager',
+            fetchpriority: 'high',
+            class: 'ecom-banner__img ecom-banner__img--desktop',
+            alt: heading
+        }}
+      {%- else -%}
+        {{ 'lifestyle-2' | placeholder_svg_tag: 'ecom-banner__placeholder ecom-banner__img--desktop' }}
+      {%- endif -%}
+
+      {%- if mobile_image != blank -%}
+        {{
+          mobile_image
+          | image_url: width: 900
+          | image_tag:
+            loading: 'eager',
+            class: 'ecom-banner__img ecom-banner__img--mobile',
+            alt: heading
+        }}
+      {%- else -%}
+        {{ 'lifestyle-2' | placeholder_svg_tag: 'ecom-banner__placeholder ecom-banner__img--mobile' }}
+      {%- endif -%}
+
+      <!-- Mobile Button Placement (Floats centered over artwork) -->
+      {%- if button_label != blank -%}
+        <div class="ecom-banner__cta-wrap-mobile">
+          <a href="{{ button_link }}" class="ecom-banner__shop-btn">
+            <span>{{ button_label }}</span>
+            <svg class="btn-arrow-icon" viewBox="0 0 24 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M1 7H22M22 7L16 1M22 7L16 13" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </a>
+        </div>
+      {%- endif -%}
+    </div>
+  </section>
+
+  {% comment %} ==================== BOTTOM ANNOUNCEMENT STRIP ==================== {% endcomment %}
+  {%- if section.settings.show_announcement -%}
+    {%- if section.settings.announcement_link != blank -%}
+      <a href="{{ section.settings.announcement_link }}" class="ecom-banner__announcement">
+        <span class="ann-text-desktop">{{ ann_text_desktop }}</span>
+        <span class="ann-text-mobile">{{ ann_text_mobile }}</span>
+      </a>
+    {%- else -%}
+      <div class="ecom-banner__announcement">
+        <span class="ann-text-desktop">{{ ann_text_desktop }}</span>
+        <span class="ann-text-mobile">{{ ann_text_mobile }}</span>
+      </div>
+    {%- endif -%}
+  {%- endif -%}
+</div>
+
+{% comment %}
+  =============================================================================
+  Mobile Navigation Hamburger Interaction (Pure Vanilla JavaScript, Zero jQuery)
+  =============================================================================
+{% endcomment %}
+<script>
+  (function() {
+    var sectionId = {{ section.id | json }};
+    var hamburger = document.getElementById('ecom-hamburger-' + sectionId);
+    var menu = document.getElementById('ecom-mobile-menu-' + sectionId);
+
+    if (hamburger && menu) {
+      hamburger.addEventListener('click', function() {
+        var isExpanded = hamburger.getAttribute('aria-expanded') === 'true';
+        hamburger.setAttribute('aria-expanded', !isExpanded);
+        menu.classList.toggle('is-active');
+      });
+
+      // Close menu when clicking outside
+      document.addEventListener('click', function(event) {
+        if (!hamburger.contains(event.target) && !menu.contains(event.target)) {
+          hamburger.setAttribute('aria-expanded', 'false');
+          menu.classList.remove('is-active');
+        }
+      });
+    }
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Ecomexperts Banner",
+  "tag": "section",
+  "class": "section-ecomexperts-banner",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Top Header Bar"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_header",
+      "label": "Show top header bar",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "header_title",
+      "label": "Brand Logo / Title",
+      "default": "TISSO VISON",
+      "info": "Appears in red editable box in Figma"
+    },
+    {
+      "type": "url",
+      "id": "header_logo_link",
+      "label": "Logo Link"
+    },
+    {
+      "type": "text",
+      "id": "header_message",
+      "label": "Header Message (Desktop)",
+      "default": "Find the ideal gift for your loved ones.",
+      "info": "Appears in red editable box in Figma"
+    },
+    {
+      "type": "text",
+      "id": "header_button_label",
+      "label": "Header Button Label",
+      "default": "CHOOSE GIFT",
+      "info": "Appears in red editable box in Figma"
+    },
+    {
+      "type": "url",
+      "id": "header_button_link",
+      "label": "Header Button Link"
+    },
+    {
+      "type": "color",
+      "id": "header_button_bg",
+      "label": "Header Button Background Color",
+      "default": "#FFF000"
+    },
+    {
+      "type": "color",
+      "id": "header_button_text_color",
+      "label": "Header Button Text Color",
+      "default": "#000000"
+    },
+    {
+      "type": "header",
+      "content": "Hero Content"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Hero Heading",
+      "default": "The Gift Guide",
+      "info": "Appears in red editable box in Figma"
+    },
+    {
+      "type": "textarea",
+      "id": "description_desktop",
+      "label": "Description (Desktop)",
+      "default": "Discover Joy: Your Ultimate Holiday Gift Destination. Explore our curated selection and find the perfect gifts to delight your loved ones this holiday season.",
+      "info": "Appears in red editable box in Figma"
+    },
+    {
+      "type": "textarea",
+      "id": "description_mobile",
+      "label": "Description (Mobile)",
+      "default": "Discover Joy: Your Ultimate Holiday Gift Destination.",
+      "info": "Appears in red editable box on mobile in Figma"
+    },
+    {
+      "type": "text",
+      "id": "button_label",
+      "label": "Hero Button Label",
+      "default": "SHOP NOW",
+      "info": "Appears in red editable box in Figma"
+    },
+    {
+      "type": "url",
+      "id": "button_link",
+      "label": "Hero Button Link"
+    },
+    {
+      "type": "color",
+      "id": "button_bg",
+      "label": "Hero Button Background Color",
+      "default": "#000000"
+    },
+    {
+      "type": "color",
+      "id": "button_text_color",
+      "label": "Hero Button Text Color",
+      "default": "#ffffff"
+    },
+    {
+      "type": "header",
+      "content": "Hero Images / Artwork"
+    },
+    {
+      "type": "image_picker",
+      "id": "image_desktop",
+      "label": "Desktop Image / Artwork"
+    },
+    {
+      "type": "image_picker",
+      "id": "image_mobile",
+      "label": "Mobile Image / Artwork"
+    },
+    {
+      "type": "header",
+      "content": "Bottom Announcement Strip"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_announcement",
+      "label": "Show Announcement Strip",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "announcement_text_desktop",
+      "label": "Announcement Text (Desktop)",
+      "default": "SUSTAINABLE, ETHICALLY MADE CLOTHES IN SIZES XXS TO 6XL",
+      "info": "Appears in red editable box in Figma"
+    },
+    {
+      "type": "text",
+      "id": "announcement_text_mobile",
+      "label": "Announcement Text (Mobile)",
+      "default": "SUSTAINABLE, ETHICALLY MADE ACTIVEWEAR",
+      "info": "Appears on mobile in Figma"
+    },
+    {
+      "type": "url",
+      "id": "announcement_link",
+      "label": "Announcement Link"
+    },
+    {
+      "type": "color",
+      "id": "announcement_bg",
+      "label": "Announcement Background Color",
+      "default": "#f4f4f4"
+    },
+    {
+      "type": "color",
+      "id": "announcement_text_color",
+      "label": "Announcement Text Color",
+      "default": "#000000"
+    },
+    {
+      "type": "header",
+      "content": "General Colors"
+    },
+    {
+      "type": "color",
+      "id": "bg_color",
+      "label": "Section Background Color",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Text Color",
+      "default": "#000000"
+    },
+    {
+      "type": "color",
+      "id": "header_bg",
+      "label": "Header Background Color",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "header_border",
+      "label": "Header Bottom Border Color",
+      "default": "#f0f0f0"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Ecomexperts Banner"
+    }
+  ]
+}
+{% endschema %}

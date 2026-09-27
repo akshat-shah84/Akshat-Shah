@@ -1,0 +1,11 @@
+{
+  "sections": {
+    "ecomexperts_banner": {
+      "type": "ecomexperts-banner",
+      "settings": {}
+    }
+  },
+  "order": [
+    "ecomexperts_banner"
+  ]
+}
