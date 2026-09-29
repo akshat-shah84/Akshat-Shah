@@ -1,11 +1,121 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
 {
   "sections": {
     "ecomexperts_banner": {
       "type": "ecomexperts-banner",
-      "settings": {}
+      "settings": {
+        "show_header": true,
+        "header_title": "",
+        "logo_image": "shopify://shop_images/Group_1000007777.svg",
+        "header_logo_link": "",
+        "header_message": "Find the ideal gift for your loved ones.",
+        "header_button_label": "CHOOSE GIFT",
+        "header_button_link": "",
+        "header_button_bg": "#fff544",
+        "header_button_text_color": "#000000",
+        "heading": "The Gift Guide",
+        "description_desktop": "Discover Joy: Your Ultimate Holiday Gift Destination. Explore our curated selection and find the perfect gifts to delight your loved ones this holiday season.",
+        "description_mobile": "Discover Joy: Your Ultimate Holiday Gift Destination.",
+        "button_label": "SHOP NOW",
+        "button_link": "",
+        "button_bg": "#000000",
+        "button_text_color": "#ffffff",
+        "hero_background_image": "shopify://shop_images/Group_1000008198.webp",
+        "show_announcement": true,
+        "announcement_text_desktop": "SUSTAINABLE, ETHICALLY MADE CLOTHES IN SIZES XXS TO 6XL",
+        "announcement_text_mobile": "SUSTAINABLE, ETHICALLY MADE ACTIVEWEAR",
+        "announcement_link": "",
+        "announcement_bg": "#F5F5F5",
+        "announcement_text_color": "#000000",
+        "bg_color": "#ffffff",
+        "text_color": "#000000",
+        "header_bg": "#f5f5f5",
+        "header_border": "#f5f5f5"
+      }
+    },
+    "ecomexperts_grid_kC6ymG": {
+      "type": "ecomexperts-grid",
+      "blocks": {
+        "product_item_aVKXFU": {
+          "type": "product_item",
+          "settings": {
+            "product": "black-leather-bag",
+            "hotspot_x": 61,
+            "hotspot_y": 56
+          }
+        },
+        "product_item_hmLP6Y": {
+          "type": "product_item",
+          "settings": {
+            "product": "blue-silk-tuxedo",
+            "hotspot_x": 84,
+            "hotspot_y": 54
+          }
+        },
+        "product_item_HUCdgj": {
+          "type": "product_item",
+          "settings": {
+            "product": "chequered-red-shirt",
+            "hotspot_x": 64,
+            "hotspot_y": 24
+          }
+        },
+        "product_item_y7Gz3i": {
+          "type": "product_item",
+          "settings": {
+            "product": "classic-leather-jacket",
+            "hotspot_x": 72,
+            "hotspot_y": 19
+          }
+        },
+        "product_item_KbHemc": {
+          "type": "product_item",
+          "settings": {
+            "product": "classic-varsity-top",
+            "hotspot_x": 51,
+            "hotspot_y": 26
+          }
+        },
+        "product_item_gaFQFB": {
+          "type": "product_item",
+          "settings": {
+            "product": "dark-denim-top",
+            "hotspot_x": 76,
+            "hotspot_y": 40
+          }
+        }
+      },
+      "block_order": [
+        "product_item_aVKXFU",
+        "product_item_hmLP6Y",
+        "product_item_HUCdgj",
+        "product_item_y7Gz3i",
+        "product_item_KbHemc",
+        "product_item_gaFQFB"
+      ],
+      "name": "Ecomexperts Grid",
+      "settings": {
+        "heading": "Tisso vison in the wild",
+        "heading_alignment": "left",
+        "max_width": 1401,
+        "grid_gap": 20,
+        "padding_top": 90,
+        "padding_bottom": 90,
+        "bg_color": "#ffffff",
+        "text_color": "#000000"
+      }
     }
   },
   "order": [
-    "ecomexperts_banner"
+    "ecomexperts_banner",
+    "ecomexperts_grid_kC6ymG"
   ]
 }
