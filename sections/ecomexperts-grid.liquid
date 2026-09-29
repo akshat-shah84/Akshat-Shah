@@ -1,0 +1,1148 @@
+{% comment %}
+  =============================================================================
+  Ecomexperts Hiring Test - Custom Product Grid Section
+  File: sections/ecomexperts-grid.liquid
+
+  Features:
+  - Responsive Grid (3x2 Desktop, 2x3 Mobile) with customizable hotspot positions.
+  - Interactive circular "+" hotspot on each product image.
+  - Single-instance accessible modal populated dynamically from clean JSON script tags.
+  - Dynamic variant options selection (Color pills & Size select dropdown).
+  - Real-time variant matching (price, thumbnail, availability).
+  - Shopify AJAX Cart API (/cart/add.js) with zero page reload.
+  - Robust Theme Editor support (shopify:section:load, shopify:block:select).
+  - Extension point prepared for Soft Winter Jacket promotional cart logic.
+  =============================================================================
+{% endcomment %}
+
+{%- liquid
+  assign section_id = section.id
+  assign heading = section.settings.heading | default: 'Tisso vison in the wild'
+  assign max_width = section.settings.max_width | default: 1337
+  assign padding_top = section.settings.padding_top | default: 90
+  assign padding_bottom = section.settings.padding_bottom | default: 90
+-%}
+
+<div id="ecom-grid-{{ section_id }}" class="ecom-grid" data-section-id="{{ section_id }}">
+  <style>
+    #ecom-grid-{{ section_id }} {
+      --eg-max-w: {{ max_width }}px;
+      --eg-pt: {{ padding_top }}px;
+      --eg-pb: {{ padding_bottom }}px;
+      --eg-mobile-pt: {{ section.settings.mobile_padding_top | default: 40 }}px;
+      --eg-mobile-pb: {{ section.settings.mobile_padding_bottom | default: 40 }}px;
+      --eg-color: {{ section.settings.text_color | default: '#000000' }};
+      --eg-bg: {{ section.settings.bg_color | default: '#ffffff' }};
+      background: var(--eg-bg);
+      color: var(--eg-color);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      padding: var(--eg-pt) 0 var(--eg-pb);
+      width: 100%;
+      box-sizing: border-box;
+      position: relative;
+    }
+
+    #ecom-grid-{{ section_id }} * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    #ecom-grid-{{ section_id }} .ecom-grid__wrap {
+      max-width: var(--eg-max-w);
+      margin: 0 auto;
+      padding: 0 32px;
+    }
+
+    #ecom-grid-{{ section_id }} .ecom-grid__heading {
+      font-family: "Lustria", serif;
+      font-size: 36px;
+      font-weight: 400;
+      letter-spacing: normal;
+      line-height: 1.2;
+      margin-bottom: 30px;
+      text-align: {{ section.settings.heading_alignment | default: 'left' }};
+    }
+
+    /* 3x2 Desktop Grid */
+    #ecom-grid-{{ section_id }} .ecom-grid__list {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: {{ section.settings.grid_gap | default: 20 }}px;
+      list-style: none;
+    }
+
+    #ecom-grid-{{ section_id }} .ecom-grid__item {
+      position: relative;
+      overflow: hidden;
+      aspect-ratio: 1 / 1;
+      background: #f6f6f6;
+    }
+
+    #ecom-grid-{{ section_id }} .ecom-grid__media {
+      width: 100%;
+      height: 100%;
+      position: relative;
+    }
+
+    #ecom-grid-{{ section_id }} .ecom-grid__img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.4, 1);
+    }
+
+    #ecom-grid-{{ section_id }} .ecom-grid__item:hover .ecom-grid__img {
+      transform: scale(1.02);
+    }
+
+    #ecom-grid-{{ section_id }} .ecom-grid__placeholder {
+      width: 100%;
+      height: 100%;
+      background: #f0f0f0;
+      fill: #a0a0a0;
+      display: block;
+    }
+
+    /* Hotspot Button */
+    #ecom-grid-{{ section_id }} .ecom-grid__hotspot {
+      position: absolute;
+      top: var(--y, 50%);
+      left: var(--x, 50%);
+      transform: translate(-50%, -50%);
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.95);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.22);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 2;
+      transition: transform 0.2s, background 0.2s, box-shadow 0.2s;
+    }
+
+    #ecom-grid-{{ section_id }} .ecom-grid__hotspot svg {
+      width: 8.5px;
+      height: 8.5px;
+    }
+
+    #ecom-grid-{{ section_id }} .ecom-grid__hotspot svg,
+    #ecom-grid-{{ section_id }} .ecom-grid__hotspot path {
+      pointer-events: none;
+    }
+
+    /* Modal Backdrop & Dialog */
+    #ecom-grid-{{ section_id }} .ecom-modal-backdrop {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.45);
+      backdrop-filter: blur(2px);
+      z-index: 99998;
+    }
+
+    #ecom-grid-{{ section_id }} .ecom-modal-backdrop.is-active {
+      display: block;
+    }
+
+    #ecom-grid-{{ section_id }} .ecom-modal {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 90%;
+      max-width: 311px;
+      background: #ffffff;
+      border: 1px solid #e0e0e0;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.25);
+      z-index: 99999;
+      padding: 36px 20px 25px;
+      font-family: var(--font-body-family);
+    }
+
+    #ecom-grid-{{ section_id }} .ecom-modal.is-active {
+      display: block;
+    }
+
+    #ecom-grid-{{ section_id }} .ecom-modal__close {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      width: 12px;
+      height: 12px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #333;
+    }
+
+    #ecom-grid-{{ section_id }} .ecom-modal__close:hover {
+      color: #000;
+    }
+
+    /* Modal Content Layout */
+    #ecom-grid-{{ section_id }} .ecom-modal__header {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 7px;
+    }
+
+    #ecom-grid-{{ section_id }} .ecom-modal__thumb {
+      width: 120px;
+      height: 140px;
+      object-fit: cover;
+      background: #f7f7f7;
+      flex-shrink: 0;
+    }
+
+    #ecom-grid-{{ section_id }} .ecom-modal__title {
+      font-size: 16px;
+      font-weight: 300;
+      margin-bottom: 20px;
+      line-height: 1.2;
+    }
+
+    #ecom-grid-{{ section_id }} .ecom-modal__price {
+      font-size: 16px;
+      font-weight: 400;
+      margin-bottom: 12px;
+      line-height: 1.2;
+    }
+
+    #ecom-grid-{{ section_id }} .ecom-modal__desc {
+      font-size: 12px;
+      line-height: 1.45;
+      color: #555;
+      display: -webkit-box;
+      -webkit-line-clamp: 4;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    /* Variant Options Form */
+    #ecom-grid-{{ section_id }} .ecom-modal__options {
+      display: flex;
+      flex-direction: column;
+      gap: 11px;
+      margin-bottom: 50px;
+    }
+
+    #ecom-grid-{{ section_id }} .ecom-modal__opt-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    #ecom-grid-{{ section_id }} .ecom-modal__opt-label {
+      font-size: 14px;
+      font-weight: 400;
+      color: #333333;
+    }
+
+    /* Option 1 Pills */
+    #ecom-grid-{{ section_id }} .ecom-modal__pills {
+      display: flex;
+      border: 1px solid #d4d4d4;
+      width: 100%;
+    }
+
+    #ecom-grid-{{ section_id }} .ecom-modal__pill {
+      flex: 1;
+      background: #fff;
+      border: none;
+      border-right: 1px solid #d4d4d4;
+      padding: 10px 14px;
+      font-size: 13px;
+      color: #333;
+      cursor: pointer;
+      text-align: center;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    #ecom-grid-{{ section_id }} .ecom-modal__pill:last-child {
+      border-right: none;
+    }
+
+    #ecom-grid-{{ section_id }} .ecom-modal__pill.is-active {
+      color: #000;
+      font-weight: 700;
+      box-shadow: inset 4px 0 0 #000, inset 0 0 0 1px #000;
+    }
+
+    #ecom-grid-{{ section_id }} .ecom-modal__color-options {
+      display: flex;
+      gap: 0;
+      width: 100%;
+      min-width: 0;
+    }
+
+    #ecom-grid-{{ section_id }} .ecom-modal__color-option {
+      position: relative;
+      display: flex;
+      flex: 1 1 0;
+      align-items: center;
+      box-sizing: border-box;
+      min-width: 0;
+      height: 40px;
+      /* strip is 6px wide at left:0 (absolute). 6px + 10px gap = 16px padding-left for text */
+      padding: 0 8px 0 16px;
+      border: 1px solid #000;
+      background: #fff;
+      color: #000;
+      cursor: pointer;
+      font-size: 18px;
+      font-weight: 400;
+      line-height: 1;
+      letter-spacing: -0.02em;
+      text-align: left;
+      z-index: 0;
+    }
+
+    /* Collapse the shared border between touching buttons */
+    #ecom-grid-{{ section_id }} .ecom-modal__color-option + .ecom-modal__color-option {
+      margin-left: -1px;
+    }
+
+    /* Raise selected option so its border is fully visible over adjacent unselected border */
+    #ecom-grid-{{ section_id }} .ecom-modal__color-option.is-selected {
+      z-index: 1;
+      background: #000;
+    }
+
+    #ecom-grid-{{ section_id }} .ecom-modal__color-option.is-selected .ecom-modal__color-name {
+      color: #fff;
+    }
+
+    #ecom-grid-{{ section_id }} .ecom-modal__color-radio {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    #ecom-grid-{{ section_id }} .ecom-modal__color-indicator {
+      position: absolute;
+      top: 0;
+      left: 0;
+      display: block;
+      width: 6px;
+      height: 100%;
+      background-color: var(--color-option-value, transparent);
+    }
+
+    #ecom-grid-{{ section_id }} .ecom-modal__color-name {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    #ecom-grid-{{ section_id }} .ecom-modal__color-radio:focus-visible ~ .ecom-modal__color-indicator {
+      outline: 2px solid #555;
+      outline-offset: 2px;
+    }
+
+    /* Option 2 Dropdown */
+    #ecom-grid-{{ section_id }} .ecom-modal__select-wrap {
+      position: relative;
+      width: 100%;
+    }
+
+    #ecom-grid-{{ section_id }} .ecom-modal__select {
+      width: 100%;
+      padding: 10px 36px 10px 14px;
+      font-size: 13px;
+      border: 1px solid #d4d4d4;
+      background: #fff;
+      color: #222;
+      appearance: none;
+      -webkit-appearance: none;
+      cursor: pointer;
+      font-family: var(--font-body-family);
+    }
+
+    #ecom-grid-{{ section_id }} .ecom-modal__select:focus,
+    #ecom-grid-{{ section_id }} .ecom-modal__select:focus-visible {
+      outline: none;
+      box-shadow: none;
+    }
+
+    #ecom-grid-{{ section_id }} .ecom-modal__select-arrow {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      pointer-events: none;
+    }
+
+    /* Submit CTA */
+    #ecom-grid-{{ section_id }} .ecom-modal__submit {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 28px;
+      background: #000;
+      color: #fff;
+      font-size: 16px;
+      font-weight: 400;
+      letter-spacing: normal;
+      text-transform: uppercase;
+      padding: 12px 24px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.5s ease;
+      position: relative;
+      font-family: var(--font-body-family);
+    }
+
+    #ecom-grid-{{ section_id }} .ecom-modal__submit span,
+    #ecom-grid-{{ section_id }} .ecom-modal__submit svg {
+      position: relative;
+      z-index: 1;
+    }
+
+    #ecom-grid-{{ section_id }} .ecom-modal__submit:before {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      background-color: #FFF544;
+      z-index: 0;
+      width: 0;
+      transition: all 0.5s ease;
+      height: 100%;
+    }
+
+    #ecom-grid-{{ section_id }} .ecom-modal__submit:hover:before {
+      width: 100%; 
+    }
+
+    #ecom-grid-{{ section_id }} .ecom-modal__submit:hover:not(:disabled) {
+      background: #FFF544;
+      color: #000
+    }
+
+    #ecom-grid-{{ section_id }} .ecom-modal__submit:not(:disabled) svg path {
+      fill: #fff;
+    }
+
+    #ecom-grid-{{ section_id }} .ecom-modal__submit:hover:not(:disabled) svg path {
+      fill: #000;
+    }
+
+    #ecom-grid-{{ section_id }} .ecom-modal__submit svg {
+      transition: transform 0.2s ease;
+    }
+
+    #ecom-grid-{{ section_id }} .ecom-modal__submit:disabled {
+      background: #888;
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+
+    #ecom-grid-{{ section_id }} .ecom-modal__msg {
+      font-size: 12px;
+      margin-top: 10px;
+      text-align: center;
+      display: none;
+    }
+
+    #ecom-grid-{{ section_id }} .ecom-modal__msg.is-error {
+      display: block;
+      color: #d32f2f;
+    }
+
+    #ecom-grid-{{ section_id }} .ecom-modal__msg.is-success {
+      display: block;
+      color: #2e7d32;
+    }
+
+    /* Mobile 2x3 Breakpoint (< 768px) */
+    @media screen and (max-width: 767px) {
+      #ecom-grid-{{ section_id }} {
+        padding: var(--eg-mobile-pt) 0 var(--eg-mobile-pb);
+      }
+
+      #ecom-grid-{{ section_id }} .ecom-grid__wrap {
+        padding: 0 16px;
+      }
+
+      #ecom-grid-{{ section_id }} .ecom-grid__heading {
+        font-size: 28px;
+        text-align: center;
+        margin-bottom: 20px;
+      }
+
+      #ecom-grid-{{ section_id }} .ecom-grid__list {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+      }
+    }
+  </style>
+
+  <div class="ecom-grid__wrap">
+    {%- if heading != blank -%}
+      <h2 class="ecom-grid__heading">{{ section.settings.heading | escape }}</h2>
+    {%- endif -%}
+
+    <!-- 6 Product Grid Items -->
+    <ul class="ecom-grid__list" role="list">
+      {%- for block in section.blocks -%}
+        {%- liquid
+          assign product = block.settings.product
+          if product.title == blank and block.settings.product != blank
+            assign product = all_products[block.settings.product]
+          endif
+
+          assign grid_image = block.settings.custom_image | default: product.featured_image
+          assign x = block.settings.hotspot_x | default: 50
+          assign y = block.settings.hotspot_y | default: 50
+        -%}
+
+        <li class="ecom-grid__item" {{ block.shopify_attributes }}>
+          <div class="ecom-grid__media">
+            {%- if grid_image != blank -%}
+              {{
+                grid_image
+                | image_url: width: 900
+                | image_tag:
+                  loading: 'lazy',
+                  class: 'ecom-grid__img',
+                  alt: product.title | default: heading
+              }}
+            {%- else -%}
+              {%- assign p_idx = forloop.index | modulo: 6 | plus: 1 -%}
+              {{ 'collection-' | append: p_idx | placeholder_svg_tag: 'ecom-grid__placeholder' }}
+            {%- endif -%}
+
+            <!-- Hotspot Button -->
+            <button
+              type="button"
+              class="ecom-grid__hotspot"
+              style="--x: {{ x }}%; --y: {{ y }}%;"
+              aria-label="View product details for {{ product.title | default: 'Product' }}"
+              aria-haspopup="dialog"
+              data-block-id="{{ block.id }}"
+            >
+              <svg viewBox="0 0 12 12" width="12" height="12" fill="none">
+                <path d="M6 1v10M1 6h10" stroke="#000" stroke-width="1.8" stroke-linecap="round"/>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Explicit modal data keeps the client-side contract independent of Shopify's product-drop serialization. -->
+          {%- if product != blank -%}
+            <script type="application/json" id="ecom-product-data-{{ section_id }}-{{ block.id }}">
+              {
+                "id": {{ product.id | json }},
+                "title": {{ product.title | json }},
+                "description": {{ product.description | json }},
+                "featured_image": {% if product.featured_image %}{{ product.featured_image | image_url: width: 600 | json }}{% else %}null{% endif %},
+                "options": [
+                  {%- for option in product.options -%}
+                    {{ option | json }}{% unless forloop.last %},{% endunless %}
+                  {%- endfor -%}
+                ],
+                "variants": [
+                  {%- for variant in product.variants -%}
+                    {
+                      "id": {{ variant.id | json }},
+                      "title": {{ variant.title | json }},
+                      "price": {{ variant.price | json }},
+                      "available": {{ variant.available | json }},
+                      "option1": {{ variant.option1 | json }},
+                      "option2": {{ variant.option2 | json }},
+                      "option3": {{ variant.option3 | json }},
+                      "featured_image": {% if variant.featured_image %}{{ variant.featured_image | image_url: width: 600 | json }}{% else %}null{% endif %}
+                    }{% unless forloop.last %},{% endunless %}
+                  {%- endfor -%}
+                ]
+              }
+            </script>
+          {%- endif -%}
+        </li>
+      {%- endfor -%}
+    </ul>
+  </div>
+
+  <!-- Reusable Accessible Product Modal -->
+  <div class="ecom-modal-backdrop" id="ecom-backdrop-{{ section_id }}" aria-hidden="true"></div>
+
+  <div 
+    class="ecom-modal" 
+    id="ecom-modal-{{ section_id }}" 
+    role="dialog" 
+    aria-modal="true" 
+    aria-hidden="true" 
+    aria-labelledby="ecom-title-{{ section_id }}"
+  >
+    <button type="button" class="ecom-modal__close" id="ecom-close-{{ section_id }}" aria-label="Close dialog">
+      <svg viewBox="0 0 14 14" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M1 1l12 12M1 13L13 1" stroke-linecap="round"/>
+      </svg>
+    </button>
+
+    <div class="ecom-modal__header">
+      <img class="ecom-modal__thumb" id="ecom-thumb-{{ section_id }}" src="" alt="" width="100" height="120" />
+      <div class="ecom-modal__info">
+        <h3 class="ecom-modal__title" id="ecom-title-{{ section_id }}"></h3>
+        <div class="ecom-modal__price" id="ecom-price-{{ section_id }}"></div>
+        <p class="ecom-modal__desc" id="ecom-desc-{{ section_id }}"></p>
+      </div>
+    </div>
+
+    <form class="ecom-modal__form" id="ecom-form-{{ section_id }}" onsubmit="return false;">
+      <div class="ecom-modal__options" id="ecom-options-{{ section_id }}"></div>
+
+      <button type="submit" class="ecom-modal__submit" id="ecom-submit-{{ section_id }}">
+        <span class="btn-text">ADD TO CART</span>
+        <svg xmlns="http://www.w3.org/2000/svg" width="26" height="12" viewBox="0 0 26 12" fill="none">
+          <path d="M0.75 4.77298L7.37629e-08 4.77298L-7.37629e-08 6.27298L0.75 6.27298L0.75 4.77298ZM25.2803 6.05331C25.5732 5.76042 25.5732 5.28554 25.2803 4.99265L20.5074 0.21968C20.2145 -0.073213 19.7396 -0.0732131 19.4467 0.21968C19.1538 0.512574 19.1538 0.987447 19.4467 1.28034L23.6893 5.52298L19.4467 9.76562C19.1538 10.0585 19.1538 10.5334 19.4467 10.8263C19.7396 11.1192 20.2145 11.1192 20.5074 10.8263L25.2803 6.05331ZM0.75 6.27298L24.75 6.27298L24.75 4.77298L0.75 4.77298L0.75 6.27298Z" fill="black"/>
+        </svg>
+      </button>
+
+      <div class="ecom-modal__msg" id="ecom-msg-{{ section_id }}" role="status" aria-live="polite"></div>
+    </form>
+  </div>
+</div>
+
+<script>
+  (function() {
+    var sId = {{ section_id | json }};
+
+    function initEcomGrid() {
+      var root = document.getElementById('ecom-grid-' + sId);
+      if (!root) return;
+      if (root.dataset.ecomGridInit === 'true') return;
+      root.dataset.ecomGridInit = 'true';
+
+      var backdrop = document.getElementById('ecom-backdrop-' + sId);
+      var modal = document.getElementById('ecom-modal-' + sId);
+      var closeBtn = document.getElementById('ecom-close-' + sId);
+      var thumbEl = document.getElementById('ecom-thumb-' + sId);
+      var titleEl = document.getElementById('ecom-title-' + sId);
+      var priceEl = document.getElementById('ecom-price-' + sId);
+      var descEl = document.getElementById('ecom-desc-' + sId);
+      var optWrap = document.getElementById('ecom-options-' + sId);
+      var submitBtn = document.getElementById('ecom-submit-' + sId);
+      var msgEl = document.getElementById('ecom-msg-' + sId);
+      var form = document.getElementById('ecom-form-' + sId);
+
+      var curProduct = null;
+      var curVariant = null;
+      var selectedOpts = {};
+      var lastTrigger = null;
+
+      function getOptionName(opt) {
+        if (!opt) return '';
+        return typeof opt === 'object' ? (opt.name || '') : String(opt);
+      }
+
+      function formatMoney(cents) {
+        var format = {{ shop.money_format | json }} || '${{amount}}';
+        var val = (Number(cents || 0) / 100).toFixed(2);
+        return format.replace(/\{\{\s*(\w+)\s*\}\}/, function(_, key) {
+          if (key.indexOf('with_comma') !== -1) return val.replace('.', ',');
+          if (key.indexOf('no_decimals') !== -1) return Math.round(cents / 100);
+          return val;
+        });
+      }
+
+      function openModal(prod, trigger) {
+        if (!prod) return;
+        curProduct = prod;
+        lastTrigger = trigger;
+
+        titleEl.textContent = prod.title || '';
+        descEl.innerHTML = prod.description || '';
+
+        var defaultImg = '';
+        if (prod.featured_image) {
+          defaultImg = typeof prod.featured_image === 'string' ? prod.featured_image : (prod.featured_image.src || '');
+        } else if (prod.images && prod.images[0]) {
+          defaultImg = typeof prod.images[0] === 'string' ? prod.images[0] : (prod.images[0].src || '');
+        }
+        if (defaultImg && defaultImg.indexOf('//') === 0) {
+          defaultImg = 'https:' + defaultImg;
+        }
+        thumbEl.src = defaultImg;
+        thumbEl.alt = prod.title || '';
+
+        var initVariant = (prod.variants && prod.variants.find(function(v) { return v.available; })) || (prod.variants && prod.variants[0]);
+        selectedOpts = {};
+        if (initVariant && prod.options) {
+          prod.options.forEach(function(opt, i) {
+            var name = getOptionName(opt);
+            if (name) {
+              selectedOpts[name] = initVariant['option' + (i + 1)];
+            }
+          });
+        }
+
+        renderOptions();
+        updateVariant();
+
+        backdrop.classList.add('is-active');
+        modal.classList.add('is-active');
+        backdrop.setAttribute('aria-hidden', 'false');
+        modal.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+
+        if (closeBtn) closeBtn.focus();
+      }
+
+      function closeModal() {
+        backdrop.classList.remove('is-active');
+        modal.classList.remove('is-active');
+        backdrop.setAttribute('aria-hidden', 'true');
+        modal.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = '';
+        if (msgEl) {
+          msgEl.className = 'ecom-modal__msg';
+          msgEl.textContent = '';
+        }
+        if (lastTrigger) lastTrigger.focus();
+      }
+
+      function renderOptions() {
+        optWrap.innerHTML = '';
+        if (!curProduct.options || curProduct.options.length === 0) return;
+
+        var firstOpt = getOptionName(curProduct.options[0]);
+        if (curProduct.options.length === 1 && firstOpt.toLowerCase() === 'title') return;
+
+        // Build a display-sorted copy: Color first, Size second, others in original order.
+        // Each entry keeps its original idx so variant key lookup (option1/option2/…) stays correct.
+        var displayOpts = curProduct.options.map(function(opt, idx) {
+          return { opt: opt, idx: idx };
+        }).sort(function(a, b) {
+          var nameOrder = function(name) {
+            var n = name.trim().toLowerCase();
+            if (n === 'color') return 0;
+            if (n === 'size')  return 1;
+            return 2;
+          };
+          return nameOrder(getOptionName(a.opt)) - nameOrder(getOptionName(b.opt));
+        });
+
+        displayOpts.forEach(function(item) {
+          var opt = item.opt;
+          var idx = item.idx; // original Shopify option index — keeps option1/option2/… correct
+          var optName = getOptionName(opt);
+          if (!optName) return;
+
+          var group = document.createElement('div');
+          group.className = 'ecom-modal__opt-group';
+
+          var label = document.createElement('div');
+          label.className = 'ecom-modal__opt-label';
+          label.id = 'ecom-option-label-' + sId + '-' + idx;
+          label.textContent = optName;
+          group.appendChild(label);
+
+          var key = 'option' + (idx + 1);
+          var vals = [];
+          if (curProduct.variants) {
+            curProduct.variants.forEach(function(v) {
+              if (v[key] && vals.indexOf(v[key]) === -1) {
+                vals.push(v[key]);
+              }
+            });
+          }
+
+          // Color option: render as accessible radio buttons with 6px color strip.
+          // Check by name at any option position — not just idx 0.
+          if (optName.trim().toLowerCase() === 'color') {
+            group.setAttribute('role', 'radiogroup');
+            group.setAttribute('aria-labelledby', label.id);
+
+            var colorOptions = document.createElement('div');
+            colorOptions.className = 'ecom-modal__color-options';
+
+            vals.forEach(function(val) {
+              var optionLabel = document.createElement('label');
+              optionLabel.className = 'ecom-modal__color-option' + (selectedOpts[optName] === val ? ' is-selected' : '');
+
+              var radio = document.createElement('input');
+              radio.type = 'radio';
+              radio.className = 'ecom-modal__color-radio';
+              radio.name = 'ecom-color-' + sId + '-' + idx;
+              radio.value = val;
+              radio.checked = selectedOpts[optName] === val;
+
+              var indicator = document.createElement('span');
+              indicator.className = 'ecom-modal__color-indicator';
+              indicator.style.setProperty('--color-option-value', val);
+              indicator.setAttribute('aria-hidden', 'true');
+
+              var valueText = document.createElement('span');
+              valueText.className = 'ecom-modal__color-name';
+              valueText.textContent = val;
+
+              radio.addEventListener('change', function() {
+                if (!radio.checked) return;
+                selectedOpts[optName] = radio.value;
+                colorOptions.querySelectorAll('.ecom-modal__color-option').forEach(function(option) {
+                  option.classList.toggle('is-selected', option === optionLabel);
+                });
+                updateVariant();
+              });
+
+              optionLabel.appendChild(radio);
+              optionLabel.appendChild(indicator);
+              optionLabel.appendChild(valueText);
+              colorOptions.appendChild(optionLabel);
+            });
+
+            group.appendChild(colorOptions);
+          } else {
+            // Non-color options (Size, etc.): render as a <select> dropdown.
+            var wrap = document.createElement('div');
+            wrap.className = 'ecom-modal__select-wrap';
+
+            var select = document.createElement('select');
+            select.className = 'ecom-modal__select';
+            select.setAttribute('aria-label', optName);
+
+            vals.forEach(function(val) {
+              var optEl = document.createElement('option');
+              optEl.value = val;
+              optEl.textContent = val;
+              if (selectedOpts[optName] === val) optEl.selected = true;
+              select.appendChild(optEl);
+            });
+
+            select.addEventListener('change', function() {
+              selectedOpts[optName] = select.value;
+              updateVariant();
+            });
+
+            wrap.appendChild(select);
+            wrap.insertAdjacentHTML('beforeend', '<div class="ecom-modal__select-arrow"><svg viewBox="0 0 10 6" width="10" height="6" fill="none"><path d="M1 1l4 4 4-4" stroke="#000" stroke-width="1.5"/></svg></div>');
+            group.appendChild(wrap);
+          }
+
+          optWrap.appendChild(group);
+        });
+      }
+
+      function updateVariant() {
+        if (!curProduct || !curProduct.variants) return;
+
+        curVariant = curProduct.variants.find(function(v) {
+          return curProduct.options.every(function(opt, i) {
+            var name = getOptionName(opt);
+            return !name || v['option' + (i + 1)] === selectedOpts[name];
+          });
+        });
+
+        var btnText = submitBtn.querySelector('.btn-text');
+        if (curVariant) {
+          priceEl.textContent = formatMoney(curVariant.price);
+          if (curVariant.featured_image) {
+            var vImg = typeof curVariant.featured_image === 'string' ? curVariant.featured_image : (curVariant.featured_image.src || '');
+            if (vImg) thumbEl.src = vImg.indexOf('//') === 0 ? 'https:' + vImg : vImg;
+          }
+
+          if (curVariant.available) {
+            submitBtn.disabled = false;
+            btnText.textContent = 'ADD TO CART';
+            msgEl.className = 'ecom-modal__msg';
+            msgEl.textContent = '';
+          } else {
+            submitBtn.disabled = true;
+            btnText.textContent = 'SOLD OUT';
+            showMsg('This variant is sold out.', true);
+          }
+        } else {
+          submitBtn.disabled = true;
+          btnText.textContent = 'UNAVAILABLE';
+          showMsg('Variant combination unavailable.', true);
+        }
+      }
+
+      function showMsg(text, isError) {
+        msgEl.textContent = text;
+        msgEl.className = 'ecom-modal__msg ' + (isError ? 'is-error' : 'is-success');
+      }
+
+      /**
+       * Architectural Hook for Special Cart Logic (Step: Soft Winter Jacket)
+       */
+      async function onProductAddedToCart(addedItem, res) {
+        return res;
+      }
+
+      async function handleAddToCart(e) {
+        e.preventDefault();
+        if (!curVariant || !curVariant.available) return;
+
+        var btnText = submitBtn.querySelector('.btn-text');
+        var origText = btnText.textContent;
+        btnText.textContent = 'ADDING...';
+        submitBtn.disabled = true;
+
+        try {
+          var res = await fetch('/cart/add.js', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify({ items: [{ id: curVariant.id, quantity: 1 }] })
+          });
+
+          if (!res.ok) {
+            var err = await res.json();
+            throw new Error(err.description || 'Could not add to cart.');
+          }
+
+          var addedItem = await res.json();
+          await onProductAddedToCart(addedItem, res);
+
+          btnText.textContent = 'ADDED!';
+          showMsg('Added to cart successfully.', false);
+
+          if (window.publish && window.PUB_SUB_EVENTS) {
+            window.publish(window.PUB_SUB_EVENTS.cartUpdate, { source: 'ecomexperts-grid' });
+          }
+          document.dispatchEvent(new CustomEvent('cart:updated', { bubbles: true }));
+          document.dispatchEvent(new CustomEvent('cart:refresh', { bubbles: true }));
+
+          setTimeout(function() {
+            btnText.textContent = origText;
+            submitBtn.disabled = false;
+          }, 1800);
+        } catch (err) {
+          btnText.textContent = origText;
+          submitBtn.disabled = false;
+          showMsg(err.message, true);
+        }
+      }
+
+      // Delegated hotspot click listener on section root
+      root.addEventListener('click', function(e) {
+        var btn = e.target.closest('.ecom-grid__hotspot');
+        if (btn) {
+          var item = btn.closest('.ecom-grid__item');
+          var script = item && item.querySelector('script[type="application/json"]');
+          if (script && script.textContent) {
+            try {
+              var prod = JSON.parse(script.textContent);
+              openModal(prod, btn);
+            } catch (err) {
+              console.error('Error parsing product JSON for hotspot', btn.getAttribute('data-block-id'), err);
+            }
+          }
+        }
+      });
+
+      if (closeBtn) closeBtn.addEventListener('click', closeModal);
+      if (backdrop) backdrop.addEventListener('click', closeModal);
+      if (form) form.addEventListener('submit', handleAddToCart);
+
+    }
+
+    // Keep one set of document-level listeners and update this section's initializer on editor reload.
+    var instances = window.__ecomexpertsGridInstances || (window.__ecomexpertsGridInstances = {});
+    instances[sId] = { init: initEcomGrid };
+
+    if (!window.__ecomexpertsGridListenersInstalled) {
+      window.__ecomexpertsGridListenersInstalled = true;
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+          Object.keys(instances).forEach(function(id) {
+            if (instances[id]) instances[id].init();
+          });
+        }, { once: true });
+      }
+
+      document.addEventListener('shopify:section:load', function(e) {
+        var instance = e.detail && instances[e.detail.sectionId];
+        if (instance) instance.init();
+      });
+
+      document.addEventListener('shopify:block:select', function(e) {
+        if (!e.detail || !e.detail.sectionId || !e.detail.blockId) return;
+        var root = document.getElementById('ecom-grid-' + e.detail.sectionId);
+        var btn = root && root.querySelector('.ecom-grid__hotspot[data-block-id="' + e.detail.blockId + '"]');
+        if (btn) btn.click();
+      });
+
+      document.addEventListener('keydown', function(e) {
+        if (e.key !== 'Escape') return;
+        var modal = document.querySelector('.ecom-modal.is-active');
+        var closeButton = modal && modal.querySelector('.ecom-modal__close');
+        if (closeButton) closeButton.click();
+      });
+    }
+
+    if (document.readyState !== 'loading') initEcomGrid();
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Ecomexperts Grid",
+  "tag": "section",
+  "class": "section-ecomexperts-grid",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Grid Heading",
+      "default": "Tisso vison in the wild"
+    },
+    {
+      "type": "select",
+      "id": "heading_alignment",
+      "label": "Heading Alignment",
+      "options": [
+        { "value": "left", "label": "Left" },
+        { "value": "center", "label": "Center" }
+      ],
+      "default": "left"
+    },
+    {
+      "type": "range",
+      "id": "max_width",
+      "label": "Container Max Width (px)",
+      "min": 1350,
+      "max": 1450,
+      "step": 1,
+      "default": 1401,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "grid_gap",
+      "label": "Grid Gap (px)",
+      "min": 8,
+      "max": 40,
+      "step": 2,
+      "default": 20,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Padding Top (px)",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "default": 90,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Padding Bottom (px)",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "default": 90,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "mobile_padding_top",
+      "label": "Mobile Padding Top",
+      "min": 0,
+      "max": 120,
+      "step": 4,
+      "default": 40,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "mobile_padding_bottom",
+      "label": "Mobile Padding Bottom",
+      "min": 0,
+      "max": 120,
+      "step": 4,
+      "default": 40,
+      "unit": "px"
+    },
+    {
+      "type": "color",
+      "id": "bg_color",
+      "label": "Background Color",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Text Color",
+      "default": "#000000"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "product_item",
+      "name": "Grid Product",
+      "settings": [
+        {
+          "type": "product",
+          "id": "product",
+          "label": "Product"
+        },
+        {
+          "type": "image_picker",
+          "id": "custom_image",
+          "label": "Custom Image (Overrides product image)"
+        },
+        {
+          "type": "range",
+          "id": "hotspot_x",
+          "label": "Hotspot X Position (%)",
+          "min": 5,
+          "max": 95,
+          "step": 1,
+          "default": 50,
+          "unit": "%"
+        },
+        {
+          "type": "range",
+          "id": "hotspot_y",
+          "label": "Hotspot Y Position (%)",
+          "min": 5,
+          "max": 95,
+          "step": 1,
+          "default": 50,
+          "unit": "%"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Ecomexperts Grid",
+      "blocks": [
+        { "type": "product_item", "settings": { "hotspot_x": 68, "hotspot_y": 65 } },
+        { "type": "product_item", "settings": { "hotspot_x": 80, "hotspot_y": 64 } },
+        { "type": "product_item", "settings": { "hotspot_x": 76, "hotspot_y": 32 } },
+        { "type": "product_item", "settings": { "hotspot_x": 72, "hotspot_y": 38 } },
+        { "type": "product_item", "settings": { "hotspot_x": 51, "hotspot_y": 42 } },
+        { "type": "product_item", "settings": { "hotspot_x": 78, "hotspot_y": 68 } }
+      ]
+    }
+  ]
+}
+{% endschema %}
